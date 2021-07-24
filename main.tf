@@ -1,3 +1,11 @@
+#########################################################################################################################
+# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two availability zone.
+# Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
+# Our VPC and subnets has to hold specific tags: "kubernetes.io/cluster/${var.cluster_name}" = "shared" for EKS to work.
+#
+#########################################################################################################################
+
+
 # We set AWS as the cloud platform to use
 provider "aws" {
    region  = var.aws_region
@@ -534,3 +542,27 @@ resource "aws_autoscaling_group" "auto_scaling_wordpress_az_2" {
     aws_alb_target_group.tg_load_balancer
   ]
 }
+
+
+#########################################################################################################################
+# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two availability zone.
+# Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
+# Our VPC and subnets has to hold specific tags: "kubernetes.io/cluster/${var.cluster_name}" = "shared" for EKS to work.
+#
+#########################################################################################################################
+
+
+
+
+
+
+
+#########################################################################################################################
+# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two availability zone.
+# Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
+# Our VPC and subnets has to hold specific tags: "kubernetes.io/cluster/${var.cluster_name}" = "shared" for EKS to work.
+#
+#########################################################################################################################
+
+
+
