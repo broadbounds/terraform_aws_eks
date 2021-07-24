@@ -1,5 +1,5 @@
 #########################################################################################################################
-# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two availability zone.
+# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two Availability Zones.
 # Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
 # Our VPC and subnets has to hold specific tags: "kubernetes.io/cluster/${var.cluster_name}" = "shared" for EKS to work.
 #
@@ -544,25 +544,78 @@ resource "aws_autoscaling_group" "auto_scaling_wordpress_az_2" {
 }
 
 
+################################################################################################################################
+# EKS requires that we set an IAM role for the cluster control plane that holds enough permission to write to CloudWatch Logs 
+# (for control plane components logging) and other policies like creating and tagging EC2 resources (for managed worker nodes).
+# AWS has two managed policy to attach to create this IAM role easily: arn:aws:iam::aws:policy/AmazonEKSServicePolicy and 
+# arn:aws:iam::aws:policy/AmazonEKSClusterPolicy.
+#
+###############################################################################################################################
+
+
+resource "aws_iam_role" "eks_cluster" { 
+  name = "${var.cluster_name}_role"
+
+  # The cluster-role-trust-policy.json 
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "eks.amazonaws.com"
+      }
+    }]
+    Version = "2012-10-17"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "policy-AmazonEKSClusterPolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_cluster.name
+}
+
+resource "aws_iam_role_policy_attachment" "policy-AmazonEKSVPCResourceController" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+  role       = aws_iam_role.eks_cluster.name
+}
+
+# To log control plane components
+resource "aws_cloudwatch_log_group" "eks_cluster_control_plane_components" { 
+  name              = "/aws/eks/${var.cluster_name}/cluster"
+  retention_in_days = 7
+}
+
+
+
+
 #########################################################################################################################
-# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two availability zone.
-# Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
-# Our VPC and subnets has to hold specific tags: "kubernetes.io/cluster/${var.cluster_name}" = "shared" for EKS to work.
+# 
 #
 #########################################################################################################################
 
+# Here we create the EKS cluster itself.
+resource "aws_eks_cluster" "cluster" { 
+  name = var.cluster_name 
+  # The cluster needs an IAM role to gain some permission over your AWS account 
+  role_arn = aws_iam_role.eks_cluster.arn 
 
+  vpc_config {
+    # We pass all our subnets (public and private ones)
+    subnet_ids = concat(module.vpc.public_subnets, module.vpc.private_subnets)
+    # The cluster will have a public endpoint. We will be able to call it from the public internet   
+    endpoint_public_access = true 
+    # The cluster will have a private endpoint too. Worker nodes will be able to call the control plane without leaving the VPC
+    endpoint_private_access = true   
+  }
 
+  # We enable control plane components logging against Amazon Cloudwatch log group
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"] 
 
-
-
-
-#########################################################################################################################
-# For our EKS cluster our VPC needs to be split into a public and private subnet in at least two availability zone.
-# Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
-# Our VPC and subnets has to hold specific tags: "kubernetes.io/cluster/${var.cluster_name}" = "shared" for EKS to work.
-#
-#########################################################################################################################
-
-
+  # Ensure that IAM Role permissions are handled before the EKS Cluster
+  depends_on = [
+    aws_iam_role_policy_attachment.policy-AmazonEKSClusterPolicy,
+    aws_iam_role_policy_attachment.policy-AmazonEKSVPCResourceController,
+    aws_cloudwatch_log_group.eks_cluster_control_plane_components
+  ]
+}
 
