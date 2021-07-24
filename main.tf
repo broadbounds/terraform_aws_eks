@@ -11,7 +11,7 @@ resource "aws_vpc" "vpc" {
    instance_tenancy = "default"
    tags = {
       Name = "VPC"
-      "kubernetes.io/cluster/${var.cluster_name}" = "shared
+      "kubernetes.io/cluster/${var.cluster_name}" = "shared"
    }
    enable_dns_hostnames = true
 }
