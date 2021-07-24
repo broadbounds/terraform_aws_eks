@@ -289,6 +289,8 @@ resource "aws_key_pair" "public_ssh_key" {
    depends_on = [tls_private_key.ssh_key]
 }
 
+
+
 # We save our public key at our specified path.
 # Can upload on remote server for ssh encryption
 resource "local_file" "save_public_key" {
