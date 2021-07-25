@@ -605,8 +605,8 @@ resource "aws_eks_cluster" "cluster" {
 
   vpc_config {
     # We pass all our subnets (public and private ones)
-    subnet_ids = concat(module.vpc.public_subnets, module.vpc.private_subnets)
-    # The cluster will have a public endpoint. We will be able to call it from the public internet   
+    subnet_ids = concat(aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id, aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id)
+    # The cluster will have a public endpoint. We will be able to call it from the public internet to interact with it
     endpoint_public_access = true 
     # The cluster will have a private endpoint too. Worker nodes will be able to call the control plane without leaving the VPC
     endpoint_private_access = true   
@@ -623,3 +623,22 @@ resource "aws_eks_cluster" "cluster" {
   ]
 }
 
+
+
+#########################################################################################################################
+# We must configure our computer to communicate with our cluster
+# For that, we must create a kubeconfig file for our cluster.
+# The settings in this file enable the kubectl CLI to communicate with our cluster.
+# We can automatically create our kubeconfig file with the AWS CLI
+# By default, the config file is created in ~/.kube/config
+#########################################################################################################################
+
+# We generate a kubeconfig (needs aws cli >=1.62 and kubectl)
+resource "null_resource" "generate_kubeconfig" { 
+
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --name ${var.cluster_name}"
+  }
+
+  depends_on = [aws_eks_cluster.cluster]
+}
