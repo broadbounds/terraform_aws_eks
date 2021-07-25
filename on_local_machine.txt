@@ -1,4 +1,4 @@
-We must install and configure Kubectl and AWS CLI on our local machine to create and manage an Amazon EKS cluster
+A) We must install and configure Kubectl and AWS CLI on our local machine to create and manage an Amazon EKS cluster
 
 AWS CLI – A command line tool for working with AWS services
 kubectl – A command line tool for working with Kubernetes clusters
@@ -20,3 +20,38 @@ Required IAM permissions
  echo "$(<kubectl.sha256) kubectl" | sha256sum --check
  sudo install -o root -g root -m 0755 kubectl
  kubectl version --client
+ 
+3) to install aws-iam-authenticator
+ curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator
+ chmod +x ./aws-iam-authenticator
+ mkdir -p $HOME/bin && cp ./aws-iam-authenticator $HOME/bin/aws-iam-authenticator && export PATH=$HOME/bin:$PATH
+ echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+
+ #Verify the installation of aws-iam-authenticator
+ aws-iam-authenticator help
+
+
+B) We must configure our computer to communicate with our cluster
+
+For that, we must create a kubeconfig file for our cluster.
+The settings in this file enable the kubectl CLI to communicate with our cluster.
+We can automatically create our kubeconfig file with the AWS CLI
+By default, the config file is created in ~/.kube/config
+
+ The “aws eks get-token” command is being used to get the token for authentication
+
+aws eks get-token
+or
+aws eks update-kubeconfig --name my-cluster
+
+aws eks update-kubeconfig --name eks-cluster --role-arn "arn:aws:iam::999999999999:role/eksServiceRole"
+Try to manually assume the role through aws-cli.
+Verify your current authenticated session: aws sts get-caller-identity
+Attempt to assume the role: aws sts assume-role --role-arn "arn:aws:iam::999999999999:role/eksServiceRole" --role-session-name test-eks-role
+
+
+Then we can test our configuration with the command:
+
+kubectl get svc
+
+
