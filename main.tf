@@ -605,7 +605,7 @@ resource "aws_eks_cluster" "cluster" {
 
   vpc_config {
     # We pass all our subnets (public and private ones)
-    subnet_ids = concat(aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id, aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id)
+    subnet_ids = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id, aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
     # The cluster will have a public endpoint. We will be able to call it from the public internet to interact with it
     endpoint_public_access = true 
     # The cluster will have a private endpoint too. Worker nodes will be able to call the control plane without leaving the VPC
