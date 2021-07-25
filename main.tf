@@ -636,6 +636,7 @@ resource "aws_eks_cluster" "cluster" {
 # We generate a kubeconfig (needs aws cli >=1.62 and kubectl)
 resource "null_resource" "generate_kubeconfig" { 
 
+  # NB: eks will not work until the aws --version command shows you any version less than 1.15.32 because EKS was introduced with version 1.15.32
   provisioner "local-exec" {
     command = "aws eks update-kubeconfig --name ${var.cluster_name}"
   }
