@@ -637,6 +637,10 @@ resource "aws_eks_cluster" "cluster" {
 resource "null_resource" "generate_kubeconfig" { 
 
   # NB: eks will not work until the aws --version command shows you any version less than 1.15.32 because EKS was introduced with version 1.15.32
+  # To upgrading the awscli version 
+  # yum install python3-pip 
+  # pip3 install --upgrade --user awscli
+  # aws --version 
   provisioner "local-exec" {
     command = "aws eks update-kubeconfig --name ${var.cluster_name}"
   }
