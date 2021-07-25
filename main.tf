@@ -642,3 +642,15 @@ resource "null_resource" "generate_kubeconfig" {
 
   depends_on = [aws_eks_cluster.cluster]
 }
+
+
+
+
+#########################################################################################################################
+# When using Amazon EKS, you need to authenticate against Amazon IAM prior to call your Kubernetes cluster. 
+# Each kubectl call will first authenticate against AWS IAM to retrieve a token, and then, will hit the EKS cluster. 
+# Missing this authentication step will result in all your kubectl call ending up with a 401 response. 
+# That token can be retrieved by calling aws eks get-token, and we can add some configurations to the kubeconfig to call this command every time.
+#########################################################################################################################
+
+
