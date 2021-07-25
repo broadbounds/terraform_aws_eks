@@ -642,7 +642,8 @@ resource "null_resource" "generate_kubeconfig" {
   # pip3 install --upgrade --user awscli
   # aws --version 
   provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name ${var.cluster_name}"
+    #command = "aws eks update-kubeconfig --name ${var.cluster_name}"
+    command = "/usr/local/aws/bin/aws eks update-kubeconfig --name ${var.cluster_name}" 
   }
 
   depends_on = [aws_eks_cluster.cluster]
