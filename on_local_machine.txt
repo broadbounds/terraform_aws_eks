@@ -1,0 +1,22 @@
+We must install and configure Kubectl and AWS CLI on our local machine to create and manage an Amazon EKS cluster
+
+AWS CLI – A command line tool for working with AWS services
+kubectl – A command line tool for working with Kubernetes clusters
+Required IAM permissions 
+
+
+1) to install aws cli
+ yum install awscli -y
+ aws --version
+ aws configure
+ AWS Access Key ID [None]: GFIAREPKTP32PU78FSB5
+ AWS Secret Access Key [None]: Ykloi0EnoZv1sgJOkoSsOesii+utTdiDT+iqsrAw
+ Default region name [None]: us-east-1
+ Default output format [None]:
+
+2) to install kubectl
+ curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+ curl -LO "https://dl.k8s.io/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+ echo "$(<kubectl.sha256) kubectl" | sha256sum --check
+ sudo install -o root -g root -m 0755 kubectl
+ kubectl version --client
