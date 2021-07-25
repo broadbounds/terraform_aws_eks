@@ -552,7 +552,7 @@ resource "aws_autoscaling_group" "auto_scaling_wordpress_az_2" {
 #
 ###############################################################################################################################
 
-
+# Here we create the role for Amazon EKS 
 resource "aws_iam_role" "eks_cluster" { 
   name = "${var.cluster_name}_role"
 
@@ -569,14 +569,15 @@ resource "aws_iam_role" "eks_cluster" {
   })
 }
 
-# The role that Amazon EKS will use to create AWS resources for Kubernetes clusters
+# Here we attach the required Amazon EKS managed IAM policy to the role
+# Amazon EKS needs this policy to create AWS resources for Kubernetes clusters
 resource "aws_iam_role_policy_attachment" "policy-AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster.name
 }
 
-# Allows the role to manage network interfaces, their private IP addresses, and 
-# their attachment and detachment to and from instances
+# Amazon EKS needs this policy to manage network interfaces, their private IP addresses
+# and their attachment and detachment to and from instances
 resource "aws_iam_role_policy_attachment" "policy-AmazonEKSVPCResourceController" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
   role       = aws_iam_role.eks_cluster.name
