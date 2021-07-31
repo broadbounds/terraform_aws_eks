@@ -98,7 +98,7 @@ resource "aws_internet_gateway" "internet_gateway" {
    }
 }
 
-# We need 1 public routetable because it is associated to the same intenet gateway id
+# We need 1 public route table because it is associated to the same intenet gateway id
 # We create a route table with target as our internet gateway and destination as "internet"
 # Set of rules used to determine where network traffic is directed
 resource "aws_route_table" "IG_route_table" {
@@ -215,7 +215,7 @@ resource "aws_route_table" "NAT_route_table_2" {
    }
 }
 
-# We associate our NAT route table to the private subnet 1 in AZ 1
+# We associate our NAT route table 1 to the private subnet 1 in AZ 1
 # Keeps the subnet private because it has a route to the internet via our NAT gateway 
 resource "aws_route_table_association" "associate_routetable_to_private_subnet_1" {
    depends_on = [
@@ -226,7 +226,7 @@ resource "aws_route_table_association" "associate_routetable_to_private_subnet_1
    route_table_id = aws_route_table.NAT_route_table_1.id
 }
 
-# We associate our NAT route table to the private subnet 2 in AZ 2
+# We associate our NAT route table 2 to the private subnet 2 in AZ 2
 # Keeps the subnet private because it has a route to the internet via our NAT gateway
 resource "aws_route_table_association" "associate_routetable_to_private_subnet_2" {
    depends_on = [
@@ -247,20 +247,21 @@ resource "aws_security_group" "sg_bastion_host" {
    description = "bastion host security group"
    vpc_id = aws_vpc.vpc.id
    ingress {
-      description = "allow ssh"
+      description = "allow access via ssh"
       from_port = 22
       to_port = 22
       protocol = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
    }
    ingress {
-      description = "allow cloudMapper"
+      description = "allow access to cloudMapper"
       from_port = 8000
       to_port = 8000
       protocol = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
    }
    egress {
+      description = "allow all outbound traffic to anywehere"
       from_port = 0
       to_port = 0
       protocol = "-1"
@@ -298,15 +299,15 @@ resource "aws_key_pair" "public_ssh_key" {
    depends_on = [tls_private_key.ssh_key]
 }
 
-# We save our public key at our specified path.
-# Can upload on remote server for ssh encryption
+# We also save our public key at our specified path.
+# Can upload on any remote server for ssh encryption
 resource "local_file" "save_public_key" {
   content = tls_private_key.ssh_key.public_key_openssh 
   filename = "${var.key_path}${var.public_key_name}.pem"
 }
 
 # We save our private key at our specified path.
-# Allows private key instead of a password to securely access our instances
+# Allows private key instead of a password to securely access instances via ssh
 resource "local_file" "save_private_key" {
   content = tls_private_key.ssh_key.private_key_pem
   filename = "${var.key_path}${var.private_key_name}.pem"
@@ -495,6 +496,7 @@ resource "aws_security_group" "security_group_wordpress" {
   }
 }
 
+# We create a launch template for our auto scaling group
 resource "aws_launch_configuration" "wordpress_instance" {
   name_prefix   = "wordpress-instance-"
   image_id      = var.ec2_ami
@@ -509,6 +511,7 @@ resource "aws_launch_configuration" "wordpress_instance" {
   ]
 }
 
+# We create an auto scaling group in AZ 1
 resource "aws_autoscaling_group" "auto_scaling_wordpress_az_1" {
   name                 = "auto-scaling-wordpress-az-1"
   launch_configuration = aws_launch_configuration.wordpress_instance.name
@@ -526,6 +529,7 @@ resource "aws_autoscaling_group" "auto_scaling_wordpress_az_1" {
   ]
 }
 
+# We create an auto scaling in AZ 2
 resource "aws_autoscaling_group" "auto_scaling_wordpress_az_2" {
   name                 = "auto-scaling-wordpress-az-2"
   launch_configuration = aws_launch_configuration.wordpress_instance.name
@@ -633,10 +637,10 @@ resource "aws_eks_cluster" "cluster" {
 # By default, the config file is created in ~/.kube/config
 #########################################################################################################################
 
-# We generate a kubeconfig (needs aws cli >=1.62 and kubectl)
+# We generate a kubeconfig (needs aws cli >=1.62 and kubectl installed on local machine)
 resource "null_resource" "generate_kubeconfig" { 
 
-  # NB: eks will not work until the aws --version command shows you any version less than 1.15.32 because EKS was introduced with version 1.15.32
+  # NB: eks will not work if the aws --version command shows you any version less than 1.15.32 because EKS was introduced with version 1.15.32
   # To upgrading the awscli version 
   # yum install python3-pip 
   # pip3 install --upgrade --user awscli
