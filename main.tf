@@ -1,3 +1,8 @@
+# Production EKS with Terraform
+# https://medium.com/risertech/production-eks-with-terraform-5ad9e76db425
+# Part 1) Setting up the managed Control Plane (EKS Cluster)
+
+
 #########################################################################################################################
 # For our EKS cluster our VPC needs to be split into a public and private subnet in at least two Availability Zones.
 # Public ones for NAT Gateways + internet-facing load balancers and private ones for worker nodes running pods.
@@ -580,6 +585,13 @@ resource "aws_iam_role_policy_attachment" "policy-AmazonEKSClusterPolicy" {
   role       = aws_iam_role.eks_cluster.name
 }
 
+# why this??
+resource "aws_iam_role_policy_attachment" "policy-AmazonEKSServicePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+  role       = aws_iam_role.eks.name
+}
+
+#why this??
 # Amazon EKS needs this policy to manage network interfaces, their private IP addresses
 # and their attachment and detachment to and from instances
 resource "aws_iam_role_policy_attachment" "policy-AmazonEKSVPCResourceController" {
@@ -592,6 +604,40 @@ resource "aws_cloudwatch_log_group" "eks_cluster_control_plane_components" {
   name              = "/aws/eks/${var.cluster_name}/cluster"
   retention_in_days = 7
 }
+
+
+#########################################################################################################################
+# 
+#
+#########################################################################################################################
+
+# Next we need the security group that the cluster is going to run under
+# i need to correct the subnets names and everything
+resource "aws_security_group" "security_group_eks" {
+  name        = "terraform-eks"
+  description = "Cluster communication with worker nodes"
+  vpc_id      = aws_vpc.eks.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [
+      aws_subnet.a.cidr_block,
+      aws_subnet.b.cidr_block,
+      aws_subnet.c.cidr_block,
+      var.vpn_cidr_block
+    ]
+  }
+}
+
 
 
 
@@ -608,6 +654,9 @@ resource "aws_eks_cluster" "cluster" {
   role_arn = aws_iam_role.eks_cluster.arn 
 
   vpc_config {
+    # why this??
+    # Security group to allow networking traffic with EKS cluster
+    #security_group_ids      = [aws_security_group.security_group-eks.id] 
     # We pass all our subnets (public and private ones)
     subnet_ids = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id, aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
     # The cluster will have a public endpoint. We will be able to call it from the public internet to interact with it
@@ -662,5 +711,166 @@ resource "null_resource" "generate_kubeconfig" {
 # Missing this authentication step will result in all your kubectl call ending up with a 401 response. 
 # That token can be retrieved by calling aws eks get-token, and we can add some configurations to the kubeconfig to call this command every time.
 #########################################################################################################################
+
+
+
+
+
+# Part 2) Setting up the worker nodes
+
+#  First we need to create a role that the worker nodes are going to assume
+# This looks very similar to the previous role, but we are granting permissions to EC2 instead of EKS
+resource "aws_iam_role" "main-node" {
+  name = "terraform-eks-main-node"
+
+  assume_role_policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+POLICY
+}
+
+
+# Here are the policy attachments for our node security role. You’ll notice there is a reference to “aws_iam_policy.alb-ingress.arn” 
+# which we haven’t setup yet. We’ll get to that when we start talking about the ALB ingress controller
+resource "aws_iam_role_policy_attachment" "main-node-AmazonEKSWorkerNodePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  role       = aws_iam_role.main-node.name
+}
+
+resource "aws_iam_role_policy_attachment" "main-node-AmazonEKS_CNI_Policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = aws_iam_role.main-node.name
+}
+
+resource "aws_iam_role_policy_attachment" "main-node-AmazonEC2ContainerRegistryReadOnly" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.main-node.name
+}
+
+resource "aws_iam_role_policy_attachment" "main-node-AmazonEC2FullAccess" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+  role       = aws_iam_role.main-node.name
+}
+
+resource "aws_iam_role_policy_attachment" "main-node-alb-ingress_policy" {
+  policy_arn = aws_iam_policy.alb-ingress.arn
+  role       = aws_iam_role.main-node.name
+}
+
+
+# We need to wrap this role in an instance profile. You’ll notice that when we setup 
+# the launch configuration below that it takes an instance profile instead of a role.
+resource "aws_iam_instance_profile" "main-node" {
+  name = "terraform-eks-main"
+  role = aws_iam_role.main-node.name
+}
+
+
+# Next we are going to setup our security group
+resource "aws_security_group" "main-node" {
+  name        = "terraform-eks-main-node"
+  description = "Security group for all nodes in the cluster"
+  vpc_id      = aws_vpc.eks.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group_rule" "main-node-ingress-self" {
+  type              = "ingress"
+  description       = "Allow node to communicate with each other"
+  from_port         = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.main-node.id
+  to_port           = 65535
+  cidr_blocks       = [
+    aws_subnet.a.cidr_block,
+    aws_subnet.b.cidr_block,
+    aws_subnet.c.cidr_block,
+    var.vpn_cidr_block
+  ]
+}
+
+
+resource "aws_security_group_rule" "main-node-ingress-cluster" {
+  type                     = "ingress"
+  description              = "Allow worker Kubelets and pods to receive communication from the cluster control plane"
+  from_port                = 1025
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.main-node.id
+  source_security_group_id = aws_security_group.eks.id
+  to_port                  = 65535
+}
+
+
+
+
+# Next we are actually going to setup the nodes. This is going to be a four step process. 
+
+# a) First we have to create the magic incantation that needs to be run the first time a new node comes up to join the EKS cluster
+locals {
+  main-node-userdata = <<USERDATA
+#!/bin/bash
+set -o xtrace
+/etc/eks/bootstrap.sh --apiserver-endpoint '${aws_eks_cluster.main.endpoint}' --b64-cluster-ca '${aws_eks_cluster.main.certificate_authority.0.data}' '${var.cluster-name}'
+USERDATA
+}
+
+# b) Second we setup a filter which searches for the latest AMI for the particular cluster version we are using
+data "aws_ami" "eks-worker" {
+  filter {
+    name   = "name"
+    values = ["amazon-eks-node-${aws_eks_cluster.main.version}-v*"]
+  }
+
+  most_recent = true
+  owners      = ["602401143452"] # Amazon EKS AMI Account ID
+}
+
+
+# c) Now we setup a launch configuration
+resource "aws_launch_configuration" "main" {
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.main-node.name
+  image_id                    = data.aws_ami.eks-worker.id
+  instance_type               = "t3.small"
+  name_prefix                 = "terraform-eks-main"
+  security_groups             = [aws_security_group.main-node.id]
+  user_data_base64            = base64encode(local.main-node-userdata)
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# d) Lastly we setup an autoscaling group
+resource "aws_autoscaling_group" "main" {
+  desired_capacity     = 3
+  launch_configuration = aws_launch_configuration.main.id
+  max_size             = 6
+  min_size             = 1
+  name                 = "terraform-eks-main"
+  vpc_zone_identifier  = [aws_subnet.a.id, aws_subnet.b.id, aws_subnet.c.id]
+}
+
+
+
+
+
+
 
 
