@@ -764,10 +764,11 @@ resource "aws_iam_role_policy_attachment" "worker_nodes_AmazonEC2FullAccess" {
   role       = aws_iam_role.worker_nodes.name
 }
 
-resource "aws_iam_role_policy_attachment" "worker_nodes_alb_ingress_policy" {
-  policy_arn = aws_iam_policy.alb-ingress.arn
-  role       = aws_iam_role.worker_nodes.name
-}
+# If we set up the ALB ingress controller
+#resource "aws_iam_role_policy_attachment" "worker_nodes_alb_ingress_policy" {
+  #policy_arn = aws_iam_policy.alb-ingress.arn
+  #role       = aws_iam_role.worker_nodes.name
+#}
 
 
 # We need to wrap this role in an instance profile. You’ll notice that when we setup 
@@ -802,9 +803,8 @@ resource "aws_security_group_rule" "sg_worker_nodes_ingress_self" {
   protocol          = "-1"
   security_group_id = aws_security_group.sg_worker_nodes.id
   to_port           = 65535
-  cidr_blocks       = [
-    aws_subnet.public_subnet_1.id, 
-    aws_subnet.public_subnet_2.id, 
+  #  
+  cidr_blocks       = [ 
     aws_subnet.private_subnet_1.id, 
     aws_subnet.private_subnet_2.id
     #var.vpn_cidr_block
@@ -872,9 +872,8 @@ resource "aws_autoscaling_group" "asg_worker_nodes" {
   max_size             = 6
   min_size             = 1
   name                 = "${var.cluster_name}_asg_worker_nodes"
-  vpc_zone_identifier  = [    
-    aws_subnet.public_subnet_1.id, 
-    aws_subnet.public_subnet_2.id, 
+  # A list of subnet IDs to launch resources in 
+  vpc_zone_identifier  = [     
     aws_subnet.private_subnet_1.id, 
     aws_subnet.private_subnet_2.id
   ]
