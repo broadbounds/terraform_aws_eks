@@ -1,5 +1,9 @@
 # Production EKS with Terraform
 # https://medium.com/risertech/production-eks-with-terraform-5ad9e76db425
+# https://medium.com/@tarunprakash/5-things-you-need-know-to-add-worker-nodes-in-the-aws-eks-cluster-bfbcb9fa0c37
+
+# Provision an EKS cluster -> Deploy worker nodes -> Connect to EKS -> Run Kubernetes Apps
+
 # Part 1) Setting up the managed Control Plane (EKS Cluster)
 
 
@@ -829,11 +833,13 @@ resource "aws_security_group_rule" "sg_worker_nodes_ingress_cluster" {
 # Next we are actually going to setup the nodes. This is going to be a four step process. 
 
 # a) First we have to create the magic incantation that needs to be run the first time a new node comes up to join the EKS cluster
+# Another important piece is a bootstrap script that bootstraps the worker nodes when they are launched so that they can register with your Amazon EKS cluster
+# sudo /etc/eks/bootstrap.sh --apiserver-endpoint 'CLUSTER-ENDPOINT' --b64-cluster-ca 'CERTIFICATE_AUTHORITY_DATA' 'CLUSTER_NAME'
 locals {
  worker_nodes_userdata = <<USERDATA
  #!/bin/bash
  set -o xtrace
- /etc/eks/bootstrap.sh --apiserver-endpoint '${aws_eks_cluster.main.endpoint}' --b64-cluster-ca '${aws_eks_cluster.main.certificate_authority.0.data}' '${var.cluster-name}'
+ /etc/eks/bootstrap.sh --apiserver-endpoint '${aws_eks_cluster.cluster.endpoint}' --b64-cluster-ca '${aws_eks_cluster.cluster.certificate_authority.0.data}' '${var.cluster-name}'
  USERDATA
 }
 
