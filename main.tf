@@ -620,7 +620,7 @@ resource "aws_cloudwatch_log_group" "eks_cluster_control_plane_components" {
 resource "aws_security_group" "sg_eks_cluster" {
   name        = "${var.cluster_name}_sg_eks_cluster"
   description = "Cluster communication with worker nodes"
-  vpc_id      = aws_vpc.eks_cluster.id
+  vpc_id      = aws_vpc.vpc.id
 
   egress {
     from_port   = 0
@@ -788,7 +788,7 @@ resource "aws_iam_instance_profile" "worker_nodes" {
 resource "aws_security_group" "sg_worker_nodes" {
   name        = "${var.cluster_name}_sg_worker_nodes"
   description = "Security group for all nodes in the cluster"
-  vpc_id      = aws_vpc.eks_cluster.id
+  vpc_id      = aws_vpc.vpc.id
 
   egress {
     from_port   = 0
