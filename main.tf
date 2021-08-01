@@ -506,55 +506,55 @@ resource "aws_security_group" "security_group_wordpress" {
 }
 
 # We create a launch template for our auto scaling group
-resource "aws_launch_configuration" "wordpress_instance" {
-  name_prefix   = "wordpress-instance-"
-  image_id      = var.ec2_ami
-  instance_type = var.ec2_type
-  key_name      = aws_key_pair.public_ssh_key.key_name
-  security_groups = [aws_security_group.security_group_wordpress.id]
-  lifecycle {
-    create_before_destroy = true
-  }
-  depends_on = [
-    aws_security_group.security_group_wordpress
-  ]
-}
+#resource "aws_launch_configuration" "wordpress_instance" {
+  #name_prefix   = "wordpress-instance-"
+  #image_id      = var.ec2_ami
+  #instance_type = var.ec2_type
+  #key_name      = aws_key_pair.public_ssh_key.key_name
+  #security_groups = [aws_security_group.security_group_wordpress.id]
+  #lifecycle {
+    #create_before_destroy = true
+  #}
+  #depends_on = [
+    #aws_security_group.security_group_wordpress
+  #]
+#}
 
 # We create an auto scaling group in AZ 1
-resource "aws_autoscaling_group" "auto_scaling_wordpress_az_1" {
-  name                 = "auto-scaling-wordpress-az-1"
-  launch_configuration = aws_launch_configuration.wordpress_instance.name
-  min_size             = 2
-  max_size             = 6
-  vpc_zone_identifier       = [aws_subnet.private_subnet_1.id]
-  target_group_arns         = [aws_alb_target_group.tg_load_balancer.id]
-  lifecycle {
-    create_before_destroy = true
-  }
-  depends_on = [
-    aws_launch_configuration.wordpress_instance,
-    aws_subnet.private_subnet_1,
-    aws_alb_target_group.tg_load_balancer
-  ]
-}
+#resource "aws_autoscaling_group" "auto_scaling_wordpress_az_1" {
+  #name                 = "auto-scaling-wordpress-az-1"
+  #launch_configuration = aws_launch_configuration.wordpress_instance.name
+  #min_size             = 2
+  #max_size             = 6
+  #vpc_zone_identifier       = [aws_subnet.private_subnet_1.id]
+  #target_group_arns         = [aws_alb_target_group.tg_load_balancer.id]
+  #lifecycle {
+    #create_before_destroy = true
+  #}
+  #depends_on = [
+    #aws_launch_configuration.wordpress_instance,
+    #aws_subnet.private_subnet_1,
+    #aws_alb_target_group.tg_load_balancer
+  #]
+#}
 
 # We create an auto scaling in AZ 2
-resource "aws_autoscaling_group" "auto_scaling_wordpress_az_2" {
-  name                 = "auto-scaling-wordpress-az-2"
-  launch_configuration = aws_launch_configuration.wordpress_instance.name
-  min_size             = 2
-  max_size             = 6
-  vpc_zone_identifier       = [aws_subnet.private_subnet_2.id]
-  target_group_arns         = [aws_alb_target_group.tg_load_balancer.id]
-  lifecycle {
-    create_before_destroy = true
-  }
-  depends_on = [
-    aws_launch_configuration.wordpress_instance,
-    aws_subnet.private_subnet_2,
-    aws_alb_target_group.tg_load_balancer
-  ]
-}
+#resource "aws_autoscaling_group" "auto_scaling_wordpress_az_2" {
+  #name                 = "auto-scaling-wordpress-az-2"
+  #launch_configuration = aws_launch_configuration.wordpress_instance.name
+  #min_size             = 2
+  #max_size             = 6
+  #vpc_zone_identifier       = [aws_subnet.private_subnet_2.id]
+  #target_group_arns         = [aws_alb_target_group.tg_load_balancer.id]
+  #lifecycle {
+    #create_before_destroy = true
+  #}
+  #depends_on = [
+    #aws_launch_configuration.wordpress_instance,
+    #aws_subnet.private_subnet_2,
+    #aws_alb_target_group.tg_load_balancer
+  #]
+#}
 
 
 ################################################################################################################################
