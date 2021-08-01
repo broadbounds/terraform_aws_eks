@@ -877,7 +877,43 @@ resource "aws_autoscaling_group" "asg_worker_nodes" {
     aws_subnet.private_subnet_1.id, 
     aws_subnet.private_subnet_2.id
   ]
+   
+  tag {
+    key                 = "Name"
+    value               = "${var.cluster_name} worker nodes ASG"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "kubernetes.io/cluster/${var.cluster_name}" 
+    value               = "owned"
+    propagate_at_launch = true
+  } 
 }
+
+
+
+#########################################################################################################################
+# We need to create a config map in our running Kubernetes cluster to accept them. This can be done directly using 
+# Kubernetes using the CLI tool kubectl, but we can also use Terraform to do this. We need to set up a new provider for 
+# this to address your Kubernetes cluster.
+#########################################################################################################################
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = aws_eks_cluster.cluster.name
+}
+
+provider "kubernetes" {
+  host                   = aws_eks_cluster.cluster.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.cluster.certificate_authority.0.data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+  # critical so the provider does not start looking for a config file on our file system 
+  load_config_file       = false
+}
+
+
+
+
+
 
 
 
