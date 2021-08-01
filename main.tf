@@ -1,6 +1,7 @@
 # Production EKS with Terraform
 # https://medium.com/risertech/production-eks-with-terraform-5ad9e76db425
 # https://medium.com/@tarunprakash/5-things-you-need-know-to-add-worker-nodes-in-the-aws-eks-cluster-bfbcb9fa0c37
+# https://registry.terraform.io/providers/hashicorp/aws/2.33.0/docs/guides/eks-getting-started#eks-master-cluster-security-group
 
 # Provision an EKS cluster -> Deploy worker nodes -> Connect to EKS -> Run Kubernetes Apps
 
@@ -801,6 +802,7 @@ resource "aws_security_group_rule" "sg_worker_nodes_ingress_cluster" {
 # Next we are actually going to setup the nodes. This is going to be a four step process. 
 
 # a) First we have to create the magic incantation that needs to be run the first time a new node comes up to join the EKS cluster
+# https://aws.amazon.com/premiumsupport/knowledge-center/eks-worker-nodes-cluster/
 # Another important piece is a bootstrap script that bootstraps the worker nodes when they are launched so that they can register with your Amazon EKS cluster
 # sudo /etc/eks/bootstrap.sh --apiserver-endpoint 'CLUSTER-ENDPOINT' --b64-cluster-ca 'CERTIFICATE_AUTHORITY_DATA' 'CLUSTER_NAME'
 locals {
@@ -811,8 +813,11 @@ locals {
  USERDATA
 }
 
+
+
 # b) Second we setup a filter which searches for the latest AMI for the particular cluster version we are using
 # Do I really need this step??
+# Terraform data source is to access an existing resource, not to create one
 #data "aws_ami" "eks-worker" {
   #filter {
     #name   = "name"
