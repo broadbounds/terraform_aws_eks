@@ -828,7 +828,7 @@ locals {
 resource "aws_launch_configuration" "worker_nodes" {
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.worker_nodes.name
-  image_id                    = "ami-0a703271661f18745" #data.aws_ami.eks-worker.id #var.ec2_ami
+  image_id                    = var.ec2_ami #"ami-0a703271661f18745" #data.aws_ami.eks-worker.id #var.ec2_ami
   instance_type               = var.ec2_type
   name_prefix                 = "${var.cluster_name}_worker_nodes"
   security_groups             = [aws_security_group.sg_worker_nodes.id]
