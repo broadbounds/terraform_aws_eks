@@ -844,22 +844,22 @@ locals {
 
 # b) Second we setup a filter which searches for the latest AMI for the particular cluster version we are using
 # Do I really need this step??
-#data "aws_ami" "eks-worker" {
-  #filter {
-    #name   = "name"
-    #values = ["amazon-eks-node-${aws_eks_cluster.main.version}-v*"]
-  #}
+data "aws_ami" "eks-worker" {
+  filter {
+    name   = "name"
+    values = ["amazon-eks-node-${aws_eks_cluster.main.version}-v*"]
+  }
 
-  #most_recent = true
-  #owners      = ["602401143452"] # Amazon EKS AMI Account ID
-#}
+  most_recent = true
+  owners      = ["003802458846"] # Amazon EKS AMI Account ID
+}
 
 
 # c) Now we setup a launch configuration
 resource "aws_launch_configuration" "worker_nodes" {
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.worker_nodes.name
-  image_id                    = var.ec2_ami #data.aws_ami.eks-worker.id
+  image_id                    = data.aws_ami.eks-worker.id #var.ec2_ami
   instance_type               = var.ec2_type
   name_prefix                 = "${var.cluster_name}_worker_nodes"
   security_groups             = [aws_security_group.sg_worker_nodes.id]
