@@ -21,6 +21,8 @@ Required IAM permissions
  sudo install -o root -g root -m 0755 kubectl
  kubectl version --client
  
+ # This step is not neccessary if we have AWS CLI version 1.16.156 or later, because we can create kubeconfig instead
+ # This old aws-iam-authenticator was used because EKS uses IAM to provide authentication to the kubernetes cluster
 3) to install aws-iam-authenticator
  curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator
  chmod +x ./aws-iam-authenticator
@@ -31,7 +33,8 @@ Required IAM permissions
  aws-iam-authenticator help
 
 
-B) We must configure our computer to communicate with our cluster
+# This is how we create kubeconfig if runnung AWS CLI version 1.16.156 or later
+4) We must configure our computer to communicate with our cluster
 
 For that, we must create a kubeconfig file for our cluster.
 The settings in this file enable the kubectl CLI to communicate with our cluster.
