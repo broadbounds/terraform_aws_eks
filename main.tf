@@ -681,37 +681,6 @@ resource "aws_eks_cluster" "cluster" {
 
 
 
-#########################################################################################################################
-# We must configure our computer to communicate with our cluster
-# For that, we must create a kubeconfig file for our cluster.
-# The settings in this file enable the kubectl CLI to communicate with our cluster.
-# We can automatically create our kubeconfig file with the AWS CLI
-# By default, the config file is created in ~/.kube/config
-
-# When using Amazon EKS, you need to authenticate against Amazon IAM prior to call your Kubernetes cluster. 
-# Each kubectl call will first authenticate against AWS IAM to retrieve a token, and then, will hit the EKS cluster. 
-# Missing this authentication step will result in all your kubectl call ending up with a 401 response. 
-# That token can be retrieved by calling aws eks get-token, and we can add some configurations to the kubeconfig to call this command every time.
-#########################################################################################################################
-
-# We generate a kubeconfig (needs aws cli >=1.62 and kubectl installed on local machine)
-resource "null_resource" "generate_kubeconfig" { 
-
-  # NB: eks will not work if the aws --version command shows you any version less than 1.15.32 because EKS was introduced with version 1.15.32
-  # To upgrading the awscli version 
-  # yum install python3-pip 
-  # pip3 install --upgrade --user awscli
-  # aws --version 
-  provisioner "local-exec" {
-    #command = "aws eks update-kubeconfig --name ${var.cluster_name}" #need to set it so jenkins user can see aws command
-    command = "/usr/local/aws/bin/aws eks update-kubeconfig --name ${var.cluster_name}" #need to set it so jenkins user can see aws command
-  }
-
-  depends_on = [aws_eks_cluster.cluster]
-}
-
-
-
 
 #########################################################################################################################
 # Part 2) Setting up the worker nodes
@@ -847,7 +816,7 @@ locals {
 data "aws_ami" "eks-worker" {
   filter {
     name   = "name"
-    values = ["amazon-eks-node-${aws_eks_cluster.main.version}-v*"]
+    values = ["amazon-eks-node-${aws_eks_cluster.cluster.version}-v*"]
   }
 
   most_recent = true
@@ -919,6 +888,34 @@ provider "kubernetes" {
 
 
 
+#########################################################################################################################
+# We must configure our computer to communicate with our cluster
+# For that, we must create a kubeconfig file for our cluster.
+# The settings in this file enable the kubectl CLI to communicate with our cluster.
+# We can automatically create our kubeconfig file with the AWS CLI
+# By default, the config file is created in ~/.kube/config
+
+# When using Amazon EKS, you need to authenticate against Amazon IAM prior to call your Kubernetes cluster. 
+# Each kubectl call will first authenticate against AWS IAM to retrieve a token, and then, will hit the EKS cluster. 
+# Missing this authentication step will result in all your kubectl call ending up with a 401 response. 
+# That token can be retrieved by calling aws eks get-token, and we can add some configurations to the kubeconfig to call this command every time.
+#########################################################################################################################
+
+# We generate a kubeconfig (needs aws cli >=1.62 and kubectl installed on local machine)
+#resource "null_resource" "generate_kubeconfig" { 
+
+  ## NB: eks will not work if the aws --version command shows you any version less than 1.15.32 because EKS was introduced with version 1.15.32
+  ## To upgrading the awscli version 
+  ## yum install python3-pip 
+  ## pip3 install --upgrade --user awscli
+  ## aws --version 
+  #provisioner "local-exec" {
+    ##command = "aws eks update-kubeconfig --name ${var.cluster_name}" #need to set it so jenkins user can see aws command
+    #command = "/usr/local/aws/bin/aws eks update-kubeconfig --name ${var.cluster_name}" #need to set it so jenkins user can see aws command
+  #}
+
+  #depends_on = [aws_eks_cluster.cluster]
+#}
 
 
 
