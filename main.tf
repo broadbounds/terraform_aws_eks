@@ -634,8 +634,8 @@ resource "aws_security_group" "sg_eks_cluster" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = [
-      aws_subnet.private_subnet_1.id, 
-      aws_subnet.private_subnet_2.id
+      aws_subnet.private_subnet_1.cidr_block, 
+      aws_subnet.private_subnet_2.cidr_block
       #var.vpn_cidr_block
     ]
   }
@@ -808,8 +808,8 @@ resource "aws_security_group_rule" "sg_worker_nodes_ingress_self" {
   to_port           = 65535
   #  
   cidr_blocks       = [ 
-    aws_subnet.private_subnet_1.id, 
-    aws_subnet.private_subnet_2.id
+    aws_subnet.private_subnet_1.cidr_block, 
+    aws_subnet.private_subnet_2.cidr_block
     #var.vpn_cidr_block
   ]
 }
