@@ -15,7 +15,7 @@ variable "AZ_2" {
 
 variable "cluster_name" {
   description = "The name of the Amazon EKS cluster."
-  default = "my-eks-cluster"
+  default = "my-eks-cluster-2"
 }
 
 variable "ec2_type" {
