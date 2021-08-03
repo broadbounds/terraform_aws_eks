@@ -28,7 +28,7 @@ resource "aws_vpc" "vpc" {
    cidr_block = var.vpc_cidr 
    instance_tenancy = "default"
    tags = {
-      Name = "VPC"
+      Name = "EKS_CLUSTER_2"
       "kubernetes.io/cluster/${var.cluster_name}" = "shared"
    }
    enable_dns_hostnames = true
@@ -45,7 +45,7 @@ resource "aws_subnet" "public_subnet_1" {
    availability_zone_id = var.AZ_1
    tags = {
       Name = "public-subnet-1"
-      "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+      #"kubernetes.io/cluster/${var.cluster_name}" = "shared"
    }
    map_public_ip_on_launch = true
 }
@@ -61,7 +61,7 @@ resource "aws_subnet" "public_subnet_2" {
    availability_zone_id = var.AZ_2
    tags = {
       Name = "public-subnet-2"
-      "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+      #"kubernetes.io/cluster/${var.cluster_name}" = "shared"
    }
    map_public_ip_on_launch = true
 }
@@ -76,7 +76,7 @@ resource "aws_subnet" "private_subnet_1" {
    cidr_block = var.private_subnet_1_CIDR
    availability_zone_id = var.AZ_1
    tags = {
-      Name = "private-subnet-1"
+      Name = "EKS_CLUSTER_2"
       "kubernetes.io/cluster/${var.cluster_name}" = "shared"
    }
 }
@@ -91,7 +91,7 @@ resource "aws_subnet" "private_subnet_2" {
    cidr_block = var.private_subnet_2_CIDR
    availability_zone_id = var.AZ_2
    tags = {
-      Name = "private-subnet-2"
+      Name = "EKS_CLUSTER_2"
       "kubernetes.io/cluster/${var.cluster_name}" = "shared"
    }
 }
@@ -642,7 +642,16 @@ resource "aws_security_group" "sg_eks_cluster" {
   }
 }
 
-
+resource "aws_security_group_rule" "sg_eks_cluster_https" {
+  #cidr_blocks       = [local.workstation-external-cidr]
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow workstation to communicate with the cluster API Server"
+  from_port         = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.sg_eks_cluster.id
+  to_port           = 443
+  type              = "ingress"
+}
 
 
 
@@ -662,7 +671,7 @@ resource "aws_eks_cluster" "cluster" {
     # Security group to allow networking traffic with EKS cluster
     security_group_ids      = [aws_security_group.sg_eks_cluster.id] 
     # We pass all our subnets (public and private ones)
-    subnet_ids = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id, aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+    subnet_ids = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
     # The cluster will have a public endpoint. We will be able to call it from the public internet to interact with it
     endpoint_public_access = true 
     # The cluster will have a private endpoint too. Worker nodes will be able to call the control plane without leaving the VPC
@@ -846,9 +855,9 @@ resource "aws_launch_configuration" "worker_nodes" {
 
 # d) Lastly we setup an autoscaling group
 resource "aws_autoscaling_group" "asg_worker_nodes" {
-  desired_capacity     = 3
+  desired_capacity     = 1
   launch_configuration = aws_launch_configuration.worker_nodes.id
-  max_size             = 6
+  max_size             = 2
   min_size             = 1
   name                 = "${var.cluster_name}_asg_worker_nodes"
   # A list of subnet IDs to launch resources in 
