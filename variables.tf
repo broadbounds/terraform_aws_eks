@@ -13,7 +13,7 @@ variable "AZ_2" {
   default = "use2-az2"
 }
 
-variable "cluster_name" {
+variable "cluster-name" {
   description = "The name of the Amazon EKS cluster."
   default = "my-eks-cluster-2"
 }
